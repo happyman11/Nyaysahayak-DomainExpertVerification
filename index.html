@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NyaySahayak: Justice through Assistance — Answer Verifier</title>
+<link rel="icon" href="assets/nyaysahayak-logo.gif" />
+<link rel="stylesheet" href="css/style.css" />
+<script>
+  // Applied before first paint (outside app.js) to avoid a flash of the
+  // wrong theme on load. Reads the same key app.js's theme toggle writes.
+  (function () {
+    try {
+      var saved = window.localStorage.getItem("legal_ai_theme_v1");
+      if (saved === "dark" || saved === "light") {
+        document.documentElement.setAttribute("data-theme", saved);
+      }
+    } catch (e) {
+      /* localStorage unavailable — fall back to system preference via CSS */
+    }
+  })();
+</script>
+</head>
+<body>
+<div class="app-shell">
+
+  <header class="site-header">
+    <div class="site-header-brand">
+      <img src="assets/nyaysahayak-logo.gif" alt="NyaySahayak emblem" class="site-logo" />
+      <div class="site-header-text">
+        <span class="site-title">NyaySahayak</span>
+        <span class="site-subtitle">Justice through Assistance — Answer Verifier</span>
+      </div>
+    </div>
+    <button type="button" id="theme-toggle-btn" class="theme-toggle" aria-label="Switch between light and dark theme">
+      <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+      <span class="theme-toggle-label">Dark</span>
+    </button>
+  </header>
+
+  <main>
+
+  <!-- ============================================================ -->
+  <!-- Screen: lawyer entry -->
+  <!-- ============================================================ -->
+  <section data-screen="lawyer-entry" class="active">
+    <div class="card">
+      <h1>Expert Validation</h1>
+      <p class="muted">
+        Thank you for helping validate this system's Act &amp; Section
+        recommendations across a set of legal scenarios. Please provide a
+        few details before you begin. This information is stored only in
+        your export file and never shared automatically.
+      </p>
+    </div>
+
+    <form class="card entry-form" id="entry-form" novalidate>
+      <div class="field">
+        <label for="entry-name">Lawyer Name <span aria-hidden="true">*</span></label>
+        <input type="text" id="entry-name" name="name" required autocomplete="name" />
+        <div class="field-error" id="entry-name-error">Please enter your name.</div>
+      </div>
+
+      <div class="field">
+        <label for="entry-email">Email <span aria-hidden="true">*</span></label>
+        <input type="email" id="entry-email" name="email" required autocomplete="email" />
+        <div class="field-error" id="entry-email-error">Please enter a valid email address.</div>
+      </div>
+
+      <div class="field hidden" id="resume-session-wrap">
+        <button type="button" class="btn" id="resume-check-btn">Check for Saved Progress</button>
+        <p class="muted" style="margin-top: var(--space-2);">
+          Already started this review on another device? Enter your email above, then check here.
+        </p>
+        <div id="resume-result" class="import-summary hidden"></div>
+      </div>
+
+      <div class="field">
+        <label for="entry-experience">Professional Experience <span aria-hidden="true">*</span></label>
+        <select id="entry-experience" name="experience" required>
+          <option value="" disabled selected>Select experience range</option>
+        </select>
+        <div class="field-error" id="entry-experience-error">Please select your experience range.</div>
+      </div>
+
+      <div class="field">
+        <label>Practice Area <span aria-hidden="true">*</span> (select all that apply)</label>
+        <div class="checkbox-grid" id="entry-practice-areas"></div>
+        <div class="field-error" id="entry-practice-error">Please select at least one practice area.</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Begin Review</button>
+    </form>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Screen: loading -->
+  <!-- ============================================================ -->
+  <section data-screen="loading">
+    <div class="card">
+      <p>Loading scenario data…</p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Screen: manual fallback import (default mode, bundled data missing) -->
+  <!-- ============================================================ -->
+  <section data-screen="manual-fallback-import">
+    <div class="card">
+      <h2>Load Review Session</h2>
+      <p class="muted">
+        No bundled scenario data was found. Please load the JSON file(s)
+        provided to you for this review session.
+      </p>
+    </div>
+    <div class="card">
+      <div class="dropzone" id="fallback-dropzone">
+        <p><strong>Drop JSON files here</strong></p>
+        <p class="muted">or</p>
+        <button type="button" class="btn btn-primary" id="fallback-choose-btn">Choose Files</button>
+        <input type="file" id="fallback-file-input" accept="application/json" multiple class="hidden" />
+      </div>
+      <div id="fallback-errors" class="import-errors hidden"></div>
+      <div id="fallback-warnings" class="import-warnings hidden"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Screen: researcher import (?researcher=true only) -->
+  <!-- ============================================================ -->
+  <section data-screen="researcher-import">
+    <div class="card">
+      <h1>Import AI Results</h1>
+      <p class="muted">
+        Researcher mode — drag in one or more <code>data.json</code>
+        files (single object, array of objects, or multiple files are all
+        supported). Duplicate <code>scenario_index</code> values are kept
+        as the first-loaded copy and flagged below.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="dropzone" id="researcher-dropzone">
+        <p><strong>Drop JSON files here</strong></p>
+        <p class="muted">or</p>
+        <button type="button" class="btn btn-primary" id="researcher-choose-btn">Choose Files</button>
+        <input type="file" id="researcher-file-input" accept="application/json" multiple class="hidden" />
+      </div>
+      <div id="researcher-errors" class="import-errors hidden"></div>
+      <div id="researcher-warnings" class="import-warnings hidden"></div>
+      <div id="researcher-summary" class="import-summary hidden"></div>
+      <div id="researcher-actions" class="hidden" style="display:flex; gap: var(--space-3); flex-wrap: wrap;">
+        <button type="button" class="btn btn-primary" id="researcher-start-review-btn">Start Review with These Scenarios</button>
+        <button type="button" class="btn" id="researcher-download-merged-btn">Download Merged JSON (for data/sample_results.json)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Screen: review -->
+  <!-- ============================================================ -->
+  <section data-screen="review">
+    <div id="researcher-banner" class="researcher-banner hidden"></div>
+
+    <div class="progress-header">
+      <h2 id="review-scenario-heading">Scenario</h2>
+      <span class="muted" id="review-progress-pct"></span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="review-progress-fill" style="width:0%"></div></div>
+
+    <div class="nav-dropdown">
+      <label for="nav-dropdown-select" class="muted">Jump to scenario</label>
+      <select id="nav-dropdown-select"></select>
+    </div>
+
+    <div class="review-layout">
+      <nav class="nav-sidebar" id="nav-sidebar">
+        <h3>Scenarios</h3>
+        <div id="nav-sidebar-list"></div>
+      </nav>
+
+      <div>
+        <div class="card question-card">
+          <h2>Scenario</h2>
+          <p class="question-text" id="review-question-text"></p>
+        </div>
+
+        <div id="act-cards-container"></div>
+
+        <div class="card" id="scenario-questions-panel"></div>
+
+        <details class="card synthesis-panel">
+          <summary>View Combined System Analysis</summary>
+          <div id="synthesis-content" style="margin-top: var(--space-3);"></div>
+        </details>
+
+        <div class="review-footer">
+          <button type="button" class="btn" id="review-prev-btn">Previous</button>
+          <span class="autosave-note">Progress saved automatically on this device.</span>
+          <div class="footer-right">
+            <button type="button" class="btn" id="review-save-draft-btn">Save Draft</button>
+            <button type="button" class="btn btn-primary" id="review-save-next-btn">Save &amp; Next</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Screen: completion -->
+  <!-- ============================================================ -->
+  <section data-screen="completion">
+    <div class="card" id="completion-summary-card">
+      <h1>Expert Review Complete</h1>
+      <p id="completion-reviewer-line"></p>
+      <p id="completion-count-line"></p>
+      <div class="table-scroll">
+        <table class="summary-table" id="completion-summary-table">
+          <thead>
+            <tr><th>Scenario</th><th>Correctness</th><th>Confidence</th></tr>
+          </thead>
+          <tbody id="completion-summary-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="completion-actions">
+      <button type="button" class="btn" id="completion-review-btn">Review Responses</button>
+      <button type="button" class="btn btn-primary" id="completion-submit-btn">Submit Evaluation</button>
+    </div>
+
+    <div class="card hidden" id="post-submit-panel">
+      <h2>Thank you — your evaluation has been recorded.</h2>
+      <p class="muted" id="post-submit-note"></p>
+      <div style="display:flex; gap: var(--space-2); flex-wrap: wrap;">
+        <button type="button" class="btn btn-primary" id="post-submit-download-btn">Download JSON Again</button>
+        <button type="button" class="btn" id="post-submit-download-pdf-btn">Download PDF Summary</button>
+      </div>
+    </div>
+  </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="footer-year"></span> Ravi Shekhar Tiwari · <a href="mailto:contact@rstiwari.com">contact@rstiwari.com</a></p>
+    <p><a href="admin.html">Admin</a></p>
+  </footer>
+
+  <!-- ============================================================ -->
+  <!-- Submit confirmation modal -->
+  <!-- ============================================================ -->
+  <div class="modal-overlay" id="submit-modal">
+    <div class="modal-box">
+      <h2>Submit Evaluation?</h2>
+      <p>I confirm that these responses reflect my independent professional legal assessment.</p>
+      <label class="checkbox-row">
+        <input type="checkbox" id="submit-confirm-checkbox" />
+        I confirm my independent assessment.
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="submit-modal-cancel-btn">Cancel</button>
+        <button type="button" class="btn btn-primary" id="submit-modal-confirm-btn" disabled>Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="error-toast"></div>
+
+</div>
+
+<script src="js/vendor/marked.min.js"></script>
+<script src="js/vendor/purify.min.js"></script>
+<script src="js/vendor/jspdf.min.js"></script>
+<script src="js/vendor/supabase.min.js"></script>
+<script src="js/remote_config.js" onerror="void 0"></script>
+<script src="js/theme.js"></script>
+<script src="js/supabase_client.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/importer.js"></script>
+<script src="js/exporter.js"></script>
+<script src="js/pdf_report.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

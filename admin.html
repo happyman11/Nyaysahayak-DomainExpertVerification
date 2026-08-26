@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin — NyaySahayak Answer Verifier</title>
+<link rel="icon" href="assets/nyaysahayak-logo.gif" />
+<link rel="stylesheet" href="css/style.css" />
+<script>
+  (function () {
+    try {
+      var saved = window.localStorage.getItem("legal_ai_theme_v1");
+      if (saved === "dark" || saved === "light") {
+        document.documentElement.setAttribute("data-theme", saved);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body>
+<div class="app-shell">
+
+  <header class="site-header">
+    <div class="site-header-brand">
+      <img src="assets/nyaysahayak-logo.gif" alt="NyaySahayak emblem" class="site-logo" />
+      <div class="site-header-text">
+        <span class="site-title">NyaySahayak — Admin</span>
+        <span class="site-subtitle">Justice through Assistance — Answer Verifier</span>
+      </div>
+    </div>
+    <button type="button" id="theme-toggle-btn" class="theme-toggle" aria-label="Switch between light and dark theme">
+      <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+      <span class="theme-toggle-label">Dark</span>
+    </button>
+  </header>
+
+  <main>
+
+  <!-- ============================================================ -->
+  <!-- Not configured notice -->
+  <!-- ============================================================ -->
+  <section data-screen="admin-not-configured">
+    <div class="card">
+      <h1>Admin requires remote storage</h1>
+      <p>
+        This admin panel reads and writes data in Supabase. It isn't
+        configured on this deployment yet — copy
+        <code>js/remote_config.example.js</code> to <code>js/remote_config.js</code>,
+        fill in your Supabase project URL and anon key, set
+        <code>enabled: true</code>, and run the SQL in
+        <code>supabase/schema.sql</code>. See README.md &ldquo;Admin &amp;
+        centralized storage&rdquo; for the full walkthrough.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Login -->
+  <!-- ============================================================ -->
+  <section data-screen="admin-login" class="active">
+    <div class="card">
+      <h1>Admin Sign In</h1>
+      <p class="muted">
+        Access is restricted to accounts created directly in your
+        Supabase project's Authentication settings — there is no public
+        sign-up here.
+      </p>
+    </div>
+    <form class="card entry-form" id="admin-login-form" novalidate>
+      <div class="field">
+        <label for="admin-email">Email</label>
+        <input type="email" id="admin-email" required autocomplete="username" />
+      </div>
+      <div class="field">
+        <label for="admin-password">Password</label>
+        <input type="password" id="admin-password" required autocomplete="current-password" />
+      </div>
+      <div id="admin-login-error" class="import-errors hidden"></div>
+      <button type="submit" class="btn btn-primary btn-block" id="admin-login-btn">Sign In</button>
+    </form>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- Dashboard -->
+  <!-- ============================================================ -->
+  <section data-screen="admin-dashboard">
+    <div class="card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap: var(--space-3);">
+      <p style="margin:0;">Signed in as <strong id="admin-whoami"></strong></p>
+      <button type="button" class="btn" id="admin-signout-btn">Sign Out</button>
+    </div>
+
+    <!-- Submissions -->
+    <div class="card">
+      <h2>Submissions</h2>
+      <p class="muted">Lawyer evaluations saved centrally. Only visible here — not downloadable by the reviewing lawyer once submitted.</p>
+      <div style="display:flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-3);">
+        <button type="button" class="btn" id="admin-refresh-submissions-btn">Refresh</button>
+        <button type="button" class="btn" id="admin-download-all-json-btn">Download All (JSON)</button>
+        <button type="button" class="btn" id="admin-download-all-csv-btn">Download All (CSV)</button>
+      </div>
+      <div id="admin-submissions-status" class="muted"></div>
+      <div class="table-scroll">
+        <table class="summary-table" id="admin-submissions-table">
+          <thead>
+            <tr>
+              <th>Reviewer</th><th>Email</th><th>Experience</th><th>Scenarios Rated</th><th>Submitted</th><th>Duration</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="admin-submissions-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Scenario data -->
+    <div class="card">
+      <h2>Scenario Data</h2>
+      <p class="muted">
+        Upload new <code>data.json</code> file(s). Publishing replaces the
+        live scenario set every lawyer sees — no GitHub commit needed.
+      </p>
+      <div id="admin-live-status" class="import-summary"></div>
+
+      <div class="dropzone" id="admin-scenario-dropzone">
+        <p><strong>Drop JSON files here</strong></p>
+        <p class="muted">or</p>
+        <button type="button" class="btn btn-primary" id="admin-scenario-choose-btn">Choose Files</button>
+        <input type="file" id="admin-scenario-file-input" accept="application/json" multiple class="hidden" />
+      </div>
+      <div id="admin-scenario-errors" class="import-errors hidden"></div>
+      <div id="admin-scenario-warnings" class="import-warnings hidden"></div>
+      <div id="admin-scenario-summary" class="import-summary hidden"></div>
+      <button type="button" class="btn btn-primary hidden" id="admin-scenario-publish-btn">Publish as Live Scenario Data</button>
+      <div id="admin-scenario-publish-status" class="muted"></div>
+    </div>
+
+    <!-- Original scenario PDFs -->
+    <div class="card">
+      <h2>Original Scenario PDFs</h2>
+      <p class="muted">
+        The system's own generated PDFs (per Act, plus the combined
+        synthesis) for each scenario, bundled with this app at
+        <code>data/scenario_pdfs/</code>. Download the full set as a ZIP,
+        preserving the same <code>Scenario N/</code> folder structure as
+        the original extraction output.
+      </p>
+      <button type="button" class="btn btn-primary" id="admin-download-pdfs-zip-btn">Download All Scenario PDFs (ZIP)</button>
+      <div id="admin-pdfs-zip-status" class="muted" style="margin-top: var(--space-2);"></div>
+    </div>
+  </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; <span id="footer-year"></span> Ravi Shekhar Tiwari · <a href="mailto:contact@rstiwari.com">contact@rstiwari.com</a></p>
+    <p><a href="index.html">Back to review app</a></p>
+  </footer>
+
+  <div id="error-toast"></div>
+
+</div>
+
+<script src="js/vendor/supabase.min.js"></script>
+<script src="js/remote_config.js" onerror="void 0"></script>
+<script src="js/theme.js"></script>
+<script src="js/supabase_client.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/importer.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/exporter.js"></script>
+<script src="js/vendor/jspdf.min.js"></script>
+<script src="js/pdf_report.js"></script>
+<script src="js/vendor/jszip.min.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

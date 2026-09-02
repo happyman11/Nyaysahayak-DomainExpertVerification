@@ -17,24 +17,24 @@ available too, powered by an optional free Supabase project — see
 
 ```
 legal-ai-lawyer-validation/
-  index.html              # lawyer-facing app
-  admin.html              # admin dashboard (Supabase Auth gated)
-  css/style.css           # shared design tokens, light/dark theme
+  index.html                       # lawyer-facing app
+  admin.html                       # admin dashboard (Supabase Auth gated)
+  css/style.css                    # shared design tokens, light/dark theme
   js/
-    parser.js             # extractSections() — Act/Section citation parser
-    storage.js             # localStorage state schema + autosave
-    importer.js            # JSON ingestion, validation, merge, dedupe
-    exporter.js             # JSON/CSV export payload + downloads
-    pdf_report.js            # client-side PDF report (jsPDF)
-    supabase_client.js        # thin wrapper: submissions, scenarios, sessions, auth
-    theme.js                   # light/dark toggle (shared by both pages)
-    app.js                      # lawyer-facing orchestrator
-    admin.js                     # admin dashboard orchestrator
-    remote_config.example.js      # copy to remote_config.js (gitignored) to enable Supabase
+    parser.js                      # extractSections() — Act/Section citation parser
+    storage.js                     # localStorage state schema + autosave
+    importer.js                    # JSON ingestion, validation, merge, dedupe
+    exporter.js                    # JSON/CSV export payload + downloads
+    pdf_report.js                  # client-side PDF report (jsPDF)
+    supabase_client.js             # thin wrapper: submissions, scenarios, sessions, auth
+    theme.js                       # light/dark toggle (shared by both pages)
+    app.js                         # lawyer-facing orchestrator
+    admin.js                       # admin dashboard orchestrator
+    remote_config.example.js       # copy to remote_config.js (gitignored) to enable Supabase
     vendor/                        # marked, DOMPurify, jsPDF, supabase-js (vendored, offline-friendly)
-  data/sample_results.json  # bundled scenario data (fallback below Supabase)
-  supabase/schema.sql       # tables + RLS policies — run once in Supabase SQL Editor
-  assets/                    # NyaySahayak logo
+  data/sample_results.json         # bundled scenario data (fallback below Supabase)
+  supabase/schema.sql              # tables + RLS policies — run once in Supabase SQL Editor
+  assets/                          # NyaySahayak logo
 ```
 
 ## Running locally
